@@ -1,0 +1,81 @@
+# app.py
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from io import BytesIO
+
+st.set_page_config(page_title="Motivation Profile", layout="wide")
+
+st.title("Motivation Profile App")
+
+# --- Placeholder Questions ---
+questions = [
+    f"Question {i+1}" for i in range(50)
+]
+
+# --- Collect responses ---
+st.header("Answer the questions (1=Low, 5=High)")
+responses = {}
+for q in questions:
+    responses[q] = st.slider(q, 1, 5, 3)
+
+# --- Convert to DataFrame ---
+df = pd.DataFrame(list(responses.items()), columns=["Question", "Score"])
+
+# --- BAR CHART ---
+st.header("Bar Chart of Responses")
+fig_bar, ax = plt.subplots(figsize=(10,6))
+ax.bar(df["Question"], df["Score"], color='skyblue')
+ax.set_xticklabels(df["Question"], rotation=90, fontsize=8)
+ax.set_ylim(0,5)
+ax.set_ylabel("Score")
+st.pyplot(fig_bar)
+
+# --- SPIDER / RADAR CHART ---
+st.header("Spider Chart of Responses")
+
+categories = df["Question"].tolist()
+values = df["Score"].tolist()
+values += values[:1]  # Complete the loop
+categories += categories[:1]
+
+fig_radar = go.Figure(
+    data=[
+        go.Scatterpolar(r=values, theta=categories, fill='toself', name='Motivation Scores')
+    ],
+    layout=go.Layout(
+        polar=dict(radialaxis=dict(visible=True, range=[0,5])),
+        showlegend=False
+    )
+)
+
+st.plotly_chart(fig_radar, use_container_width=True)
+
+# --- EXPORT / DOWNLOAD BUTTON ---
+st.header("Download Charts")
+def download_chart(fig, filename):
+    buf = BytesIO()
+    fig.savefig(buf, format="png", bbox_inches='tight')
+    buf.seek(0)
+    return buf
+
+col1, col2 = st.columns(2)
+with col1:
+    buf_bar = download_chart(fig_bar, "bar_chart.png")
+    st.download_button(
+        label="Download Bar Chart",
+        data=buf_bar,
+        file_name="bar_chart.png",
+        mime="image/png"
+    )
+
+with col2:
+    st.download_button(
+        label="Download Spider Chart",
+        data=fig_radar.to_image(format="png"),
+        file_name="spider_chart.png",
+        mime="image/png"
+    )
+
+st.success("All done! You can answer the questions and download your charts.")
