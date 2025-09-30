@@ -1,135 +1,125 @@
+```python
 import streamlit as st
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import io
-from fpdf import FPDF
+import matplotlib.pyplot as plt
+from math import pi
 
-# ----------------------------
-# Survey Setup
-# ----------------------------
-categories = [
-    "Financial Rewards",
-    "Career Advancement",
-    "Leadership & Influence",
-    "Work-Life Balance",
-    "Learning & Growth",
-    "Recognition & Value",
-    "Autonomy & Independence",
-    "Purpose & Impact",
-    "Stability & Security",
-    "Team & Relationships"
-]
+# -------------------------------
+# Define the 50 questions by theme
+# -------------------------------
+questions = {
+    "Leadership": [
+        "I feel confident making important decisions.",
+        "I take initiative without waiting to be asked.",
+        "I motivate others to perform their best.",
+        "I can adapt my leadership style to the situation.",
+        "I set clear goals for myself and others.",
+        "I handle conflict constructively.",
+        "I communicate my vision effectively.",
+        "I take responsibility for outcomes.",
+        "I build trust within teams.",
+        "I provide constructive feedback."
+    ],
+    "Mindfulness": [
+        "I practice being present in the moment.",
+        "I manage stress effectively.",
+        "I take time to reflect on my experiences.",
+        "I am aware of my emotions as they arise.",
+        "I can calm myself in difficult situations.",
+        "I listen attentively to others.",
+        "I have a regular mindfulness or meditation practice.",
+        "I notice small details in my daily life.",
+        "I balance work and personal life well.",
+        "I show patience with myself and others."
+    ],
+    "Well-Being": [
+        "I get enough rest and sleep regularly.",
+        "I maintain a healthy diet.",
+        "I exercise consistently.",
+        "I feel positive about my overall health.",
+        "I take time for hobbies or activities I enjoy.",
+        "I nurture strong personal relationships.",
+        "I feel a sense of purpose in life.",
+        "I manage my workload effectively.",
+        "I have strategies to recharge when tired.",
+        "I feel supported by those around me."
+    ],
+    "Business/Strategy": [
+        "I set long-term goals and work toward them.",
+        "I analyze data to guide decisions.",
+        "I understand financial impacts of choices.",
+        "I manage resources effectively.",
+        "I stay current with industry trends.",
+        "I approach problems with creative solutions.",
+        "I evaluate risks before acting.",
+        "I delegate tasks effectively.",
+        "I follow through on commitments.",
+        "I measure success with clear metrics."
+    ],
+    "Growth & Learning": [
+        "I seek out opportunities to learn.",
+        "I embrace feedback to improve.",
+        "I challenge myself with new experiences.",
+        "I mentor or support others’ growth.",
+        "I reflect on mistakes and learn from them.",
+        "I stay curious and open-minded.",
+        "I invest time in professional development.",
+        "I track my progress over time.",
+        "I celebrate small wins.",
+        "I adapt quickly when facing change."
+    ]
+}
 
-questions = { ... }  # (Keep the same 50 questions dictionary from before)
-
-# ----------------------------
+# -------------------------------
 # Streamlit App
-# ----------------------------
-st.title("Motivation Profile")
-st.write("Answer the following questions on a scale of 1 (Not Important) to 5 (Extremely Important).")
+# -------------------------------
+st.title("Motivation Profile Assessment")
+st.write("Answer 50 questions to gain insight into your strengths across leadership, mindfulness, well-being, business strategy, and growth.")
 
-category_scores = {}
+responses = {}
+
+# Collect responses
 for category, qs in questions.items():
-    st.subheader(category)
-    answers = [st.slider(q, 1, 5, 3) for q in qs]
-    category_scores[category] = np.mean(answers)
+    st.header(category)
+    responses[category] = []
+    for q in qs:
+        responses[category].append(
+            st.slider(q, 1, 5, 3)  # default 3 = neutral
+        )
 
-# ----------------------------
-# Charts + Report
-# ----------------------------
-if st.button("Generate Results"):
-    st.subheader("Your Motivation Profile Results")
-    df = pd.DataFrame(list(category_scores.items()), columns=["Category", "Score"])
+# Process results after submission
+if st.button("Generate My Profile"):
+    st.subheader("Your Results")
 
-    # ----- Bar Chart -----
-    st.bar_chart(df.set_index("Category"))
+    # Average scores by category
+    results = {cat: sum(scores) / len(scores) for cat, scores in responses.items()}
+    df = pd.DataFrame.from_dict(results, orient='index', columns=["Score"])
 
-    # ----- Radar Chart -----
+    # Bar chart
+    st.bar_chart(df)
+
+    # Radar chart
+    categories = list(results.keys())
+    values = list(results.values())
+    values += values[:1]  # close loop
+
     N = len(categories)
-    values = df["Score"].tolist()
-    values += values[:1]
-    angles = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
+    angles = [n / float(N) * 2 * pi for n in range(N)]
     angles += angles[:1]
 
-    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-    ax.plot(angles, values, color="blue", linewidth=2)
-    ax.fill(angles, values, color="blue", alpha=0.25)
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(categories, fontsize=9)
-    ax.set_yticks([1, 2, 3, 4, 5])
-    ax.set_ylim(0, 5)
-    ax.set_title("Motivation Radar Profile", size=14, weight="bold", pad=20)
+    fig, ax = plt.subplots(figsize=(6,6), subplot_kw=dict(polar=True))
+    plt.xticks(angles[:-1], categories)
+    ax.plot(angles, values, linewidth=2, linestyle='solid')
+    ax.fill(angles, values, alpha=0.25)
     st.pyplot(fig)
 
-    # ----- Interpretation -----
-    st.subheader("Your Top Motivators")
-    top3 = df.sort_values(by="Score", ascending=False).head(3)
-    for i, row in top3.iterrows():
-        st.write(f"**{row['Category']}**: This is a key driver of your motivation with a score of {row['Score']:.1f}.")
-
-    st.subheader("Areas of Lower Motivation")
-    bottom3 = df.sort_values(by="Score", ascending=True).head(3)
-    for i, row in bottom3.iterrows():
-        st.write(f"**{row['Category']}**: Less of a priority right now (score {row['Score']:.1f}). May not energize you compared to other factors.")
-
-    # ----- Export CSV -----
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="Download Results as CSV",
-        data=csv,
-        file_name="motivation_profile_results.csv",
-        mime="text/csv",
-    )
-
-    # ----- Export Full PDF Report -----
-    def create_pdf(dataframe, radar_fig, top3, bottom3):
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(200, 10, "Motivation Profile Report", ln=True, align="C")
-
-        # Add bar chart
-        pdf.set_font("Arial", size=12)
-        pdf.cell(200, 10, "Bar Chart of Motivation Scores", ln=True)
-        buf_bar = io.BytesIO()
-        dataframe.plot(kind="bar", x="Category", y="Score", legend=False).figure.savefig(buf_bar, format="png", bbox_inches="tight")
-        buf_bar.seek(0)
-        pdf.image(buf_bar, x=30, y=None, w=150)
-
-        # Add radar chart
-        pdf.ln(10)
-        pdf.cell(200, 10, "Radar Chart of Motivation Profile", ln=True)
-        buf_radar = io.BytesIO()
-        radar_fig.savefig(buf_radar, format="png", bbox_inches="tight")
-        buf_radar.seek(0)
-        pdf.image(buf_radar, x=30, y=None, w=150)
-
-        # Add interpretation
-        pdf.ln(10)
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(200, 10, "Top Motivators", ln=True)
-        pdf.set_font("Arial", size=12)
-        for i, row in top3.iterrows():
-            pdf.multi_cell(0, 10, f"- {row['Category']}: Strong driver of your motivation (Score {row['Score']:.1f})")
-
-        pdf.ln(5)
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(200, 10, "Lower Motivators", ln=True)
-        pdf.set_font("Arial", size=12)
-        for i, row in bottom3.iterrows():
-            pdf.multi_cell(0, 10, f"- {row['Category']}: Lower priority for you right now (Score {row['Score']:.1f})")
-
-        # Output PDF
-        pdf_buffer = io.BytesIO()
-        pdf.output(pdf_buffer)
-        return pdf_buffer
-
-    pdf_buffer = create_pdf(df, fig, top3, bottom3)
-    st.download_button(
-        label="Download Full PDF Report",
-        data=pdf_buffer,
-        file_name="motivation_profile_report.pdf",
-        mime="application/pdf",
-    )
-
+    # Simple text summary
+    st.subheader("Summary")
+    for cat, score in results.items():
+        if score >= 4.0:
+            st.write(f"**{cat}:** This is a strong area for you. Keep building on these strengths.")
+        elif score >= 3.0:
+            st.write(f"**{cat}:** You show balance here, but there’s room for growth.")
+        else:
+            st.write(f"**{cat}:** This may be a growth area. Consider strategies to strengthen this dimension.")
+```
