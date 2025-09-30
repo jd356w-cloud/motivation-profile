@@ -1,42 +1,149 @@
+```python
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+from math import pi
 
-# Title
-st.title("Motivation Profile")
-
-st.write("Answer the following questions to get your motivation profile summary.")
-
-# Define 50 placeholder questions
+# -----------------------------
+# DATA: Categories and Questions
+# -----------------------------
 questions = [
-    f"Question {i+1}: On a scale of 1 (low) to 5 (high), how motivated do you feel about this area?"
-    for i in range(50)
+    # Financial & Security
+    ("Financial & Security", "Higher salary motivates me"),
+    ("Financial & Security", "Would switch jobs for more pay"),
+    ("Financial & Security", "Long-term job security is key"),
+    ("Financial & Security", "Retirement/benefits matter"),
+    ("Financial & Security", "Financial rewards = value"),
+    # Recognition & Promotion
+    ("Recognition & Promotion", "Promotion motivates more than pay"),
+    ("Recognition & Promotion", "Recognition energizes me"),
+    ("Recognition & Promotion", "Titles/recognition matter"),
+    ("Recognition & Promotion", "Awards increase satisfaction"),
+    ("Recognition & Promotion", "Advancement is top motivator"),
+    # Leadership & Influence
+    ("Leadership & Influence", "I enjoy being in charge"),
+    ("Leadership & Influence", "Leading a team motivates me"),
+    ("Leadership & Influence", "Influence over strategy excites me"),
+    ("Leadership & Influence", "Mentoring others motivates me"),
+    ("Leadership & Influence", "Seek leadership roles"),
+    # Growth & Learning
+    ("Growth & Learning", "Learning new skills motivates me"),
+    ("Growth & Learning", "I seek professional development"),
+    ("Growth & Learning", "Would trade pay for growth"),
+    ("Growth & Learning", "Challenging work excites me"),
+    ("Growth & Learning", "Continuous learning is vital"),
+    # Purpose & Impact
+    ("Purpose & Impact", "Work making a difference matters"),
+    ("Purpose & Impact", "I care about societal contribution"),
+    ("Purpose & Impact", "Values must align with mission"),
+    ("Purpose & Impact", "Prefer purpose over pay"),
+    ("Purpose & Impact", "Impact > recognition"),
+    # Work-Life Balance & Flexibility
+    ("Work-Life Balance & Flexibility", "Value family/personal over advancement"),
+    ("Work-Life Balance & Flexibility", "Flexible hours motivate me"),
+    ("Work-Life Balance & Flexibility", "Control over schedule boosts productivity"),
+    ("Work-Life Balance & Flexibility", "Long hours reduce motivation"),
+    ("Work-Life Balance & Flexibility", "Balance is my top priority"),
+    # Relationships & Teamwork
+    ("Relationships & Teamwork", "Motivated by supportive team"),
+    ("Relationships & Teamwork", "Positive boss relationship is essential"),
+    ("Relationships & Teamwork", "Thrive in collaboration"),
+    ("Relationships & Teamwork", "Culture motivates me"),
+    ("Relationships & Teamwork", "Coworker relationships matter"),
+    # Autonomy & Creativity
+    ("Autonomy & Creativity", "Decide how to do tasks"),
+    ("Autonomy & Creativity", "Prefer innovation and creativity"),
+    ("Autonomy & Creativity", "Value freedom over strict rules"),
+    ("Autonomy & Creativity", "Creativity makes work fulfilling"),
+    ("Autonomy & Creativity", "Motivated by independence"),
+    # Achievement & Challenge
+    ("Achievement & Challenge", "Enjoy setting ambitious goals"),
+    ("Achievement & Challenge", "Deadlines/challenges motivate"),
+    ("Achievement & Challenge", "Driven by results/targets"),
+    ("Achievement & Challenge", "I like to compete"),
+    ("Achievement & Challenge", "Difficult tasks > easy wins"),
+    # Family & Lifestyle
+    ("Family & Lifestyle", "Providing for family motivates"),
+    ("Family & Lifestyle", "Career supports lifestyle"),
+    ("Family & Lifestyle", "Would trade advancement for family"),
+    ("Family & Lifestyle", "Family influences decisions"),
+    ("Family & Lifestyle", "Lifestyle > prestige"),
 ]
 
-# Store responses
+# -----------------------------
+# Scoring Guide
+# -----------------------------
+scoring_guide = {
+    "Financial & Security": "Motivation driven by salary, benefits, and financial growth.",
+    "Recognition & Promotion": "Motivation from promotions, status, and recognition.",
+    "Leadership & Influence": "Motivation from leading teams, making decisions, and guiding others.",
+    "Growth & Learning": "Motivation from training, education, and personal/professional growth.",
+    "Purpose & Impact": "Motivation from mission alignment, values, and meaningful work.",
+    "Work-Life Balance & Flexibility": "Motivation from flexibility, time off, and manageable workload.",
+    "Relationships & Teamwork": "Motivation from collaboration, positive culture, and relationships.",
+    "Autonomy & Creativity": "Motivation from independence and creativity in work.",
+    "Achievement & Challenge": "Motivation from ambitious goals, challenges, and competition.",
+    "Family & Lifestyle": "Motivation from family needs and lifestyle choices.",
+}
+
+# -----------------------------
+# Streamlit App
+# -----------------------------
+st.title("Career Motivation Profile")
+
+st.write("Answer the following questions (1 = Strongly Disagree, 5 = Strongly Agree):")
+
 responses = []
+for category, question in questions:
+    score = st.slider(question, 1, 5, 3)
+    responses.append((category, question, score))
 
-with st.form("motivation_form"):
-    for i, q in enumerate(questions):
-        response = st.slider(q, 1, 5, 3, key=f"q{i}")
-        responses.append(response)
+if st.button("Submit"):
+    # Convert to DataFrame
+    df = pd.DataFrame(responses, columns=["Category", "Question", "Score"])
+    category_scores = df.groupby("Category")["Score"].sum().reset_index()
 
-    submitted = st.form_submit_button("Submit")
+    # -----------------------------
+    # Spider Chart
+    # -----------------------------
+    st.subheader("Motivation Spider Chart")
 
-if submitted:
-    df = pd.DataFrame({
-        "Question": [f"Q{i+1}" for i in range(50)],
-        "Response": responses
-    })
+    categories = list(category_scores["Category"])
+    values = list(category_scores["Score"])
+    values += values[:1]
+    N = len(categories)
 
-    st.write("### Your Responses")
-    st.dataframe(df)
+    angles = [n / float(N) * 2 * pi for n in range(N)]
+    angles += angles[:1]
 
-    avg_score = df["Response"].mean()
-    st.write(f"**Your average motivation score is:** {avg_score:.2f} / 5")
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    plt.xticks(angles[:-1], categories, color="grey", size=8)
+    ax.plot(angles, values, linewidth=1, linestyle="solid")
+    ax.fill(angles, values, "skyblue", alpha=0.4)
+    st.pyplot(fig)
 
-    if avg_score >= 4:
-        st.success("You are highly motivated! Keep pushing forward 🚀")
-    elif avg_score >= 2.5:
-        st.info("Your motivation is steady, but there’s room to grow 💡")
-    else:
-        st.warning("It looks like you’re struggling with motivation. Try focusing on one small win at a time 🌱")
+    # -----------------------------
+    # Career Motivation Dashboard
+    # -----------------------------
+    st.subheader("Career Motivation Dashboard")
+
+    dashboard_data = []
+    for _, row in category_scores.iterrows():
+        cat = row["Category"]
+        score = row["Score"]
+
+        if score <= 12:
+            level = "Low"
+            insight = f"Low: {scoring_guide[cat].replace('Motivation', 'Less focus on')}"
+        elif score <= 19:
+            level = "Moderate"
+            insight = f"Moderate: Balanced with other motivators."
+        else:
+            level = "High"
+            insight = f"High: {scoring_guide[cat]}"
+
+        dashboard_data.append({
+            "Category": cat,
+            "Description": scoring_guide[cat],
+       
+```
