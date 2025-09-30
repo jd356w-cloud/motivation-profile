@@ -1,8 +1,10 @@
-```python
+
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from math import pi
+from fpdf import FPDF
+
 
 # -------------------------------
 # Define the 50 questions by theme
@@ -122,4 +124,3 @@ if st.button("Generate My Profile"):
             st.write(f"**{cat}:** You show balance here, but there’s room for growth.")
         else:
             st.write(f"**{cat}:** This may be a growth area. Consider strategies to strengthen this dimension.")
-```
