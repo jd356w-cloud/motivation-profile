@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -71,28 +70,28 @@ questions = [
 ]
 
 # -----------------------------
-# Scoring Guide
+# Scoring Guide for Dashboard
 # -----------------------------
 scoring_guide = {
     "Financial & Security": "Motivation driven by salary, benefits, and financial growth.",
-    "Recognition & Promotion": "Motivation from promotions, status, and recognition.",
+    "Recognition & Promotion": "Motivation from promotions, status, and climbing the ladder.",
     "Leadership & Influence": "Motivation from leading teams, making decisions, and guiding others.",
     "Growth & Learning": "Motivation from training, education, and personal/professional growth.",
     "Purpose & Impact": "Motivation from mission alignment, values, and meaningful work.",
-    "Work-Life Balance & Flexibility": "Motivation from flexibility, time off, and manageable workload.",
+    "Work-Life Balance & Flexibility": "Motivation from having flexibility, time off, and manageable workload.",
     "Relationships & Teamwork": "Motivation from collaboration, positive culture, and relationships.",
-    "Autonomy & Creativity": "Motivation from independence and creativity in work.",
+    "Autonomy & Creativity": "Motivation from independence in tasks and decision-making.",
     "Achievement & Challenge": "Motivation from ambitious goals, challenges, and competition.",
     "Family & Lifestyle": "Motivation from family needs and lifestyle choices.",
 }
 
 # -----------------------------
-# Streamlit App
+# STREAMLIT APP
 # -----------------------------
 st.title("Career Motivation Profile")
-
 st.write("Answer the following questions (1 = Strongly Disagree, 5 = Strongly Agree):")
 
+# Collect responses
 responses = []
 for category, question in questions:
     score = st.slider(question, 1, 5, 3)
@@ -104,21 +103,19 @@ if st.button("Submit"):
     category_scores = df.groupby("Category")["Score"].sum().reset_index()
 
     # -----------------------------
-    # Spider Chart
+    # Spider/Radar Chart
     # -----------------------------
     st.subheader("Motivation Spider Chart")
-
     categories = list(category_scores["Category"])
     values = list(category_scores["Score"])
-    values += values[:1]
+    values += values[:1]  # close the loop
     N = len(categories)
-
     angles = [n / float(N) * 2 * pi for n in range(N)]
     angles += angles[:1]
 
     fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
     plt.xticks(angles[:-1], categories, color="grey", size=8)
-    ax.plot(angles, values, linewidth=1, linestyle="solid")
+    ax.plot(angles, values, linewidth=2, linestyle="solid")
     ax.fill(angles, values, "skyblue", alpha=0.4)
     st.pyplot(fig)
 
@@ -126,18 +123,18 @@ if st.button("Submit"):
     # Career Motivation Dashboard
     # -----------------------------
     st.subheader("Career Motivation Dashboard")
-
     dashboard_data = []
+
     for _, row in category_scores.iterrows():
         cat = row["Category"]
         score = row["Score"]
 
         if score <= 12:
             level = "Low"
-            insight = f"Low: {scoring_guide[cat].replace('Motivation', 'Less focus on')}"
+            insight = f"Low: Less focused on {scoring_guide[cat].replace('Motivation', '').strip()}"
         elif score <= 19:
             level = "Moderate"
-            insight = f"Moderate: Balanced with other motivators."
+            insight = "Moderate: Balanced with other motivators."
         else:
             level = "High"
             insight = f"High: {scoring_guide[cat]}"
@@ -145,4 +142,20 @@ if st.button("Submit"):
         dashboard_data.append({
             "Category": cat,
             "Description": scoring_guide[cat],
-       
+            "Score": score,
+            "Level": level,
+            "Insights": insight
+        })
+
+    dashboard_df = pd.DataFrame(dashboard_data)
+    st.dataframe(dashboard_df)
+
+    # -----------------------------
+    # Highlight strongest motivator
+    # -----------------------------
+    top_row = category_scores.loc[category_scores["Score"].idxmax()]
+    st.success(
+        f"Your strongest motivator is **{top_row['Category']}** "
+        f"with a score of {top_row['Score']}.\n\n"
+        f"{scoring_guide[top_row['Category']]}"
+    )
