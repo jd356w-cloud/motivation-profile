@@ -1,4 +1,4 @@
-```python
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -146,4 +146,3 @@ if st.button("Submit"):
             "Category": cat,
             "Description": scoring_guide[cat],
        
-```
